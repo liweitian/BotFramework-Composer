@@ -107,3 +107,19 @@ export const updateCurrentPath: ActionCreator = async ({ dispatch }, path, stora
     dispatch({ type: ActionTypes.GET_STORAGE_FAILURE, payload: null, error: err });
   }
 };
+
+export const createFolder: ActionCreator = async ({ dispatch }, path) => {
+  try {
+    httpClient.post(`/storages/folder`, { path });
+  } catch (err) {
+    dispatch({ type: ActionTypes.GET_STORAGE_FAILURE, payload: null, error: err });
+  }
+};
+
+export const updateFolder: ActionCreator = async ({ dispatch }, path, oldName, newName) => {
+  try {
+    httpClient.put(`/storages/folder`, { path, oldName, newName });
+  } catch (err) {
+    dispatch({ type: ActionTypes.GET_STORAGE_FAILURE, payload: null, error: err });
+  }
+};

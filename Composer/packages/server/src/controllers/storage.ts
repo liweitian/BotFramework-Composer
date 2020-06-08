@@ -20,6 +20,24 @@ function updateCurrentPath(req: Request, res: Response) {
   res.status(200).json(StorageService.updateCurrentPath(req.body.path, req.body.storageId));
 }
 
+function createFolder(req: Request, res: Response) {
+  try {
+    StorageService.createFolder(req.body.path);
+    res.status(200).json({ message: 'success' });
+  } catch (e) {
+    res.status(400).json({ message: e.message });
+  }
+}
+
+function updateFolder(req: Request, res: Response) {
+  try {
+    StorageService.updateFolder(req.body.path, req.body.oldName, req.body.newName);
+    res.status(200).json({ message: 'success' });
+  } catch (e) {
+    res.status(400).json({ message: e.message });
+  }
+}
+
 async function getBlob(req: Request, res: Response) {
   const storageId = req.params.storageId;
   const user = await PluginLoader.getUserFromRequest(req);
@@ -42,6 +60,8 @@ async function getBlob(req: Request, res: Response) {
 
 export const StorageController = {
   getStorageConnections,
+  createFolder,
+  updateFolder,
   createStorageConnection,
   getBlob,
   updateCurrentPath,

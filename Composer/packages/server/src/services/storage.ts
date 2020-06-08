@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 import * as fs from 'fs';
+import { promisify } from 'util';
 
 import { UserIdentity } from '@bfc/plugin-loader';
 
@@ -15,6 +16,8 @@ const fileBlacklist = ['.DS_Store'];
 const isValidFile = (file: string) => {
   return fileBlacklist.filter((badFile) => badFile === file).length === 0;
 };
+
+const mkdir = promisify(fs.mkdir);
 class StorageService {
   private STORE_KEY = 'storageConnections';
   private storageConnections: StorageConnection[] = [];
@@ -116,6 +119,30 @@ class StorageService {
       Store.set(this.STORE_KEY, this.storageConnections);
     }
     return this.storageConnections;
+  };
+
+  public createFolder = (path: string) => {
+    try {
+      if (!fs.existsSync(path)) {
+        mkdir(path);
+      }
+    } catch (e) {
+      throw new Error(e);
+    }
+  };
+
+  public updateFolder = (path: string, oldName: string, newName: string) => {
+    const currentPath = Path.join(path, oldName);
+    const newPath = Path.join(path, newName);
+    try {
+      if (fs.existsSync(currentPath)) {
+        fs.renameSync(currentPath, newPath);
+      } else {
+        throw new Error(`The folder ${currentPath} does not exist`);
+      }
+    } catch (e) {
+      throw new Error(e);
+    }
   };
 
   private ensureDefaultBotFoldersExist = () => {

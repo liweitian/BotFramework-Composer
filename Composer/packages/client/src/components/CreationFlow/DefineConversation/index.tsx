@@ -35,6 +35,8 @@ interface DefineConversationProps
     templateId: string;
     location: string;
   }> {
+  createFolder: (path: string) => void;
+  updateFolder: (path: string) => void;
   onSubmit: (formData: DefineConversationFormData) => void;
   onDismiss: () => void;
   onCurrentPathUpdate: (newPath?: string, storageId?: string) => void;
@@ -44,7 +46,16 @@ interface DefineConversationProps
 }
 
 const DefineConversation: React.FC<DefineConversationProps> = (props) => {
-  const { onSubmit, onDismiss, onCurrentPathUpdate, saveTemplateId, templateId, focusedStorageFolder } = props;
+  const {
+    onSubmit,
+    onDismiss,
+    onCurrentPathUpdate,
+    saveTemplateId,
+    templateId,
+    focusedStorageFolder,
+    createFolder,
+    updateFolder,
+  } = props;
   const files = get(focusedStorageFolder, 'children', []);
   const getDefaultName = () => {
     let i = -1;
@@ -177,8 +188,10 @@ const DefineConversation: React.FC<DefineConversationProps> = (props) => {
             </StackItem>
           </Stack>
           <LocationSelectContent
+            createFolder={createFolder}
             focusedStorageFolder={focusedStorageFolder}
             operationMode={{ read: true, write: true }}
+            updateFolder={updateFolder}
             onCurrentPathUpdate={onCurrentPathUpdate}
           />
 

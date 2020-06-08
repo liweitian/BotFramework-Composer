@@ -111,3 +111,16 @@ export const stackinput = {
     },
   ],
 };
+
+export const editButton = css`
+  width: 10px;
+`;
+
+export const nameField = {
+  fieldGroup: {
+    height: 22,
+  },
+  field: {
+    height: 22,
+  },
+};

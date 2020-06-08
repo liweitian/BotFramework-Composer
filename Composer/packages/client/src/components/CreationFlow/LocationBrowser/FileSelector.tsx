@@ -7,6 +7,7 @@ import path from 'path';
 import { jsx } from '@emotion/core';
 import { useMemo, useState } from 'react';
 import { Icon } from 'office-ui-fabric-react/lib/Icon';
+import { IconButton } from 'office-ui-fabric-react/lib/Button';
 import { Link } from 'office-ui-fabric-react/lib/Link';
 import { TooltipHost } from 'office-ui-fabric-react/lib/Tooltip';
 import { Sticky, StickyPositionType } from 'office-ui-fabric-react/lib/Sticky';
@@ -20,14 +21,26 @@ import {
 import formatMessage from 'format-message';
 import { Fragment } from 'react';
 import { Dropdown, IDropdownOption } from 'office-ui-fabric-react/lib/Dropdown';
+import { TextField } from 'office-ui-fabric-react/lib/TextField';
 import { Stack, StackItem } from 'office-ui-fabric-react/lib/Stack';
 import moment from 'moment';
 
 import { FileTypes } from '../../../constants/index';
 import { StorageFolder, File } from '../../../store/types';
 import { getFileIconName, calculateTimeDiff } from '../../../utils';
+import { nameRegex } from '../../../constants';
 
-import { dropdown, detailListContainer, detailListClass, tableCell, content, halfstack, stackinput } from './styles';
+import {
+  dropdown,
+  detailListContainer,
+  detailListClass,
+  tableCell,
+  content,
+  halfstack,
+  stackinput,
+  editButton,
+  nameField,
+} from './styles';
 
 interface FileSelectorProps {
   operationMode: {
@@ -36,6 +49,8 @@ interface FileSelectorProps {
   };
   focusedStorageFolder: StorageFolder;
   isWindows: boolean;
+  createFolder: (path: string) => void;
+  updateFolder: (path: string, oldName: string, newName: string) => void;
   onCurrentPathUpdate: (newPath?: string, storageId?: string) => void;
   onFileChosen: (file: any) => void;
   checkShowItem: (file: File) => boolean;
@@ -45,6 +60,12 @@ type SortState = {
   key: string;
   descending: boolean;
 };
+
+enum EditMode {
+  NONE,
+  Creating,
+  Updating,
+}
 
 const _renderIcon = (file: File) => {
   const iconName = getFileIconName(file);
@@ -60,38 +81,89 @@ const _renderIcon = (file: File) => {
   return <img alt={`${iconName} file icon`} className={detailListClass.fileIconImg} src={url} />;
 };
 
-const _renderNameColumn = (onFileChosen: (file: File) => void) => (file: File) => {
-  const iconName = getFileIconName(file);
-  return (
-    <div data-is-focusable css={tableCell}>
-      <Link
-        aria-label={
-          file.name === '..'
-            ? formatMessage('previous folder')
-            : formatMessage('{icon} name is {file}', {
-                icon: iconName,
-                file: file.name,
-              })
-        }
-        onClick={() => onFileChosen(file)}
-      >
-        {file.name}
-      </Link>
-    </div>
-  );
-};
-
 export const FileSelector: React.FC<FileSelectorProps> = (props) => {
   const {
     onFileChosen,
     focusedStorageFolder,
     checkShowItem,
+    createFolder,
+    updateFolder,
     onCurrentPathUpdate,
     operationMode,
     isWindows = false,
   } = props;
   // for detail file list in open panel
   const currentPath = path.join(focusedStorageFolder.parent, focusedStorageFolder.name);
+  const [indexToUpdate, setIndexToUpdate] = useState(-1);
+  const [folderName, setFolderName] = useState('');
+  const [editMode, setEditMode] = useState(EditMode.NONE);
+  const createOrUpdateFolder = (index: number) => {
+    if (editMode === EditMode.Creating && nameRegex.test(folderName)) {
+      createFolder(path.join(currentPath, folderName));
+    }
+    if (editMode === EditMode.Updating && nameRegex.test(folderName)) {
+      updateFolder(currentPath, storageFiles[index].name, folderName);
+    }
+    if (nameRegex.test(folderName)) {
+      setFolderName('');
+      setIndexToUpdate(-1);
+      setEditMode(EditMode.NONE);
+      storageFiles[index].name = folderName;
+    }
+    setFolderName('');
+  };
+
+  const onEditButtonClick = (file: File, index: number) => {
+    setEditMode(EditMode.Updating);
+    setFolderName(file.name);
+    setIndexToUpdate(index);
+  };
+
+  const _renderNameColumn = (file: File, index: number | undefined) => {
+    const iconName = getFileIconName(file);
+    return (
+      <div
+        data-is-focusable
+        css={tableCell}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && index) {
+            createOrUpdateFolder(index);
+            e.preventDefault();
+          }
+        }}
+      >
+        {index == indexToUpdate ? (
+          <TextField
+            autoFocus
+            styles={nameField}
+            value={folderName}
+            onBlur={() => createOrUpdateFolder(index)}
+            onChange={(e, value) => {
+              e.preventDefault();
+              if (value !== undefined) {
+                setFolderName(value);
+              }
+            }}
+          />
+        ) : (
+          <Link
+            aria-label={
+              file.name === '..'
+                ? formatMessage('previous folder')
+                : formatMessage('{icon} name is {file}', {
+                    icon: iconName,
+                    file: file.name,
+                  })
+            }
+            styles={{ root: { marginTop: 3, marginLeft: 10 } }}
+            onClick={() => onFileChosen(file)}
+          >
+            {file.name}
+          </Link>
+        )}
+      </div>
+    );
+  };
 
   const tableColumns = [
     {
@@ -118,7 +190,7 @@ export const FileSelector: React.FC<FileSelectorProps> = (props) => {
       sortAscendingAriaLabel: formatMessage('Sorted A to Z'),
       sortDescendingAriaLabel: formatMessage('Sorted Z to A'),
       data: 'string',
-      onRender: _renderNameColumn(onFileChosen),
+      onRender: _renderNameColumn,
       isPadded: true,
     },
     {
@@ -126,18 +198,54 @@ export const FileSelector: React.FC<FileSelectorProps> = (props) => {
       name: formatMessage('Date Modified'),
       fieldName: 'dateModifiedValue',
       minWidth: 60,
-      maxWidth: 70,
+      maxWidth: 170,
       isResizable: true,
       data: 'number',
       onRender: (item: File) => {
         return (
           <div data-is-focusable css={tableCell}>
             <div
-              aria-label={formatMessage(`Last modified time is {time}`, { time: calculateTimeDiff(item.lastModified) })}
+              aria-label={formatMessage(`Last modified time is {time}`, {
+                time: calculateTimeDiff(item.lastModified),
+              })}
               css={content}
               tabIndex={-1}
             >
               {calculateTimeDiff(item.lastModified)}
+            </div>
+          </div>
+        );
+      },
+      isPadded: true,
+    },
+    {
+      key: 'Edit',
+      name: '',
+      fieldName: '',
+      minWidth: 30,
+      maxWidth: 30,
+      isResizable: false,
+      data: 'icon',
+      onRender: (item: File, index: number | undefined) => {
+        return index == 0 || !operationMode.write || !focusedStorageFolder.writable ? null : (
+          <div data-is-focusable css={tableCell}>
+            <div css={content} tabIndex={-1}>
+              <IconButton
+                ariaLabel="Edit"
+                iconProps={{ iconName: 'Edit' }}
+                styles={editButton}
+                title="Edit"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (index) {
+                    onEditButtonClick(item, index);
+                  }
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+              />
             </div>
           </div>
         );
@@ -203,6 +311,18 @@ export const FileSelector: React.FC<FileSelectorProps> = (props) => {
     return array.slice(start, end).join(separator);
   }
 
+  function onCreateNewFolder() {
+    setIndexToUpdate(1);
+    const newFolder: File = {
+      name: '',
+      type: FileTypes.FOLDER,
+      path: currentPath,
+    };
+    setFolderName('');
+    storageFiles.splice(1, 0, newFolder);
+    setEditMode(EditMode.Creating);
+  }
+
   const separator = path.sep;
   const pathItems = currentPath.split(separator).filter((p) => p !== '');
   const breadcrumbItems = pathItems.map((item, index) => {
@@ -246,6 +366,9 @@ export const FileSelector: React.FC<FileSelectorProps> = (props) => {
             styles={dropdown}
             onChange={updateLocation}
           />
+        </StackItem>
+        <StackItem>
+          <div onClick={onCreateNewFolder}>{formatMessage('create new folder')} </div>
         </StackItem>
       </Stack>
       <div css={detailListContainer} data-is-scrollable="true">
