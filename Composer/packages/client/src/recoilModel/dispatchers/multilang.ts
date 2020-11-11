@@ -8,7 +8,7 @@ import difference from 'lodash/difference';
 
 import languageStorage from '../../utils/languageStorage';
 import { getExtension } from '../../utils/fileUtil';
-
+import { botProjectSpaceSelector, rootBotProjectIdSelector } from '../selectors/project';
 import {
   lgFilesState,
   luFilesState,
@@ -59,7 +59,26 @@ export const multilangDispatcher = () => {
   const setLocale = useRecoilCallback(
     ({ set, snapshot }: CallbackInterface) => async (locale: string, projectId: string) => {
       const botName = await snapshot.getPromise(botDisplayNameState(projectId));
-
+      const botProjectsMetaData = await snapshot.getPromise(botProjectSpaceSelector);
+      const rootBotProjectId = await snapshot.getPromise(rootBotProjectIdSelector);
+      if (projectId === rootBotProjectId) {
+        for (let i = 0; i < botProjectsMetaData.length; i++) {
+          if (!botProjectsMetaData[i].isRootBot && !botProjectsMetaData[i].isRemote) {
+            const skillBotProjectId = botProjectsMetaData[i].projectId;
+            const settings = await snapshot.getPromise(settingsState(skillBotProjectId));
+            const languages = settings.languages;
+            const defaultLang = settings.defaultLang;
+            if (!languages.includes(locale)) {
+              addLanguages({
+                languages: [locale],
+                projectId: skillBotProjectId,
+                defaultLang: defaultLang,
+                switchTo: true,
+              });
+            }
+          }
+        }
+      }
       set(localeState(projectId), locale);
       languageStorage.setLocale(botName, locale);
     }
@@ -68,7 +87,6 @@ export const multilangDispatcher = () => {
   const addLanguages = useRecoilCallback(
     (callbackHelpers: CallbackInterface) => async ({ languages, defaultLang, switchTo = false, projectId }) => {
       const { set, snapshot } = callbackHelpers;
-      const botName = await snapshot.getPromise(botDisplayNameState(projectId));
       const prevlgFiles = await snapshot.getPromise(lgFilesState(projectId));
       const prevluFiles = await snapshot.getPromise(luFilesState(projectId));
       const prevSettings = await snapshot.getPromise(settingsState(projectId));
@@ -87,8 +105,7 @@ export const multilangDispatcher = () => {
 
       if (switchTo) {
         const switchToLocale = languages[0];
-        set(localeState(projectId), switchToLocale);
-        languageStorage.setLocale(botName, switchToLocale);
+        setLocale(switchToLocale, projectId);
       }
 
       set(lgFilesState(projectId), [...prevlgFiles, ...lgFiles]);

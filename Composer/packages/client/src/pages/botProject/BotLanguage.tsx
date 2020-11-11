@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 /** @jsx jsx */
-import React, { Fragment, useMemo } from 'react';
+import React, { Fragment, useMemo, useEffect } from 'react';
 import { jsx, css } from '@emotion/core';
 import { useRecoilValue } from 'recoil';
 import { ActionButton } from 'office-ui-fabric-react/lib/Button';
@@ -11,12 +11,12 @@ import cloneDeep from 'lodash/cloneDeep';
 import { FontSizes, FontWeights } from 'office-ui-fabric-react/lib/Styling';
 import { NeutralColors, SharedColors } from '@uifabric/fluent-theme';
 
-import { dispatcherState, settingsState } from '../../recoilModel';
+import { dispatcherState, settingsState, rootBotProjectIdSelector, botDisplayNameState } from '../../recoilModel';
 import { CollapsableWrapper } from '../../components/CollapsableWrapper';
 import { languageListTemplates } from '../../components/MultiLanguage';
 import { localeState, showAddLanguageModalState } from '../../recoilModel/atoms';
 import { AddLanguageModal } from '../../components/MultiLanguage';
-
+import languageStorage from '../../utils/languageStorage';
 // -------------------- Styles -------------------- //
 
 const titleStyle = css`
@@ -115,6 +115,9 @@ export const BotLanguage: React.FC<BotLanguageProps> = (props) => {
   const settings = useRecoilValue(settingsState(projectId));
   const locale = useRecoilValue(localeState(projectId));
   const showAddLanguageModal = useRecoilValue(showAddLanguageModalState(projectId));
+  const rootProjectId = useRecoilValue(rootBotProjectIdSelector) ?? '';
+  const botName = useRecoilValue(botDisplayNameState(rootProjectId));
+  const rootBotActiveLocale = languageStorage.get(botName)?.locale;
   const {
     addLanguageDialogBegin,
     setSettings,
@@ -123,6 +126,10 @@ export const BotLanguage: React.FC<BotLanguageProps> = (props) => {
     addLanguageDialogCancel,
     addLanguages,
   } = useRecoilValue(dispatcherState);
+
+  useEffect(() => {
+    setLocale(rootBotActiveLocale, rootProjectId);
+  }, [rootProjectId]);
 
   const languageListOptions = useMemo(() => {
     const languageList = languageListTemplates(languages, locale, defaultLanguage);

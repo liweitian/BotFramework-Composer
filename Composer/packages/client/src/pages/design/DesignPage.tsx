@@ -41,6 +41,7 @@ import {
   localeState,
   qnaFilesState,
   rootBotProjectIdSelector,
+  botDisplayNameState,
 } from '../../recoilModel';
 import { CreateQnAModal } from '../../components/QnA';
 import { triggerNotSupported } from '../../utils/dialogValidator';
@@ -61,6 +62,7 @@ import {
 } from './styles';
 import { VisualEditor } from './VisualEditor';
 import { PropertyEditor } from './PropertyEditor';
+import languageStorage from '../../utils/languageStorage';
 
 type BreadcrumbItem = {
   key: string;
@@ -132,7 +134,8 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
   const visualEditorSelection = useRecoilValue(visualEditorSelectionState);
   const { undo, redo, commitChanges, clearUndo } = undoFunction;
   const [canUndo, canRedo] = useRecoilValue(undoStatusSelectorFamily(projectId));
-
+  const botName = useRecoilValue(botDisplayNameState(rootProjectId));
+  const rootBotActiveLocale = languageStorage.get(botName)?.locale;
   const {
     removeDialog,
     updateDialog,
@@ -151,6 +154,7 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
     createQnAKBFromScratch,
     createQnAFromUrlDialogBegin,
     setCurrentPageMode,
+    setLocale,
   } = useRecoilValue(dispatcherState);
 
   const params = new URLSearchParams(location?.search);
@@ -184,6 +188,10 @@ const DesignPage: React.FC<RouteComponentProps<{ dialogId: string; projectId: st
     }
     setWarningIsVisible(true);
   }, [dialogId, dialogs, location]);
+
+  useEffect(() => {
+    setLocale(rootBotActiveLocale, rootProjectId);
+  }, [rootProjectId]);
 
   // migration: add id to dialog when dialog doesn't have id
   useEffect(() => {
