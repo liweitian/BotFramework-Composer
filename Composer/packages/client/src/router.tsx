@@ -13,10 +13,13 @@ import { data } from './styles';
 import { NotFound } from './components/NotFound';
 import { BASEPATH } from './constants';
 import { dispatcherState, schemasState, botProjectIdsState, botOpeningState, pluginPagesSelector } from './recoilModel';
+import { rootBotProjectIdSelector } from './recoilModel/selectors/project';
 import { openAlertModal } from './components/Modal/AlertDialog';
 import { dialogStyle } from './components/Modal/dialogStyle';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { PluginPageContainer } from './pages/plugin/PluginPageContainer';
+import { botProjectSpaceLoadedState, botDisplayNameState } from './recoilModel/atoms';
+import languageStorage from './utils/languageStorage';
 
 const DesignPage = React.lazy(() => import('./pages/design/DesignPage'));
 const LUPage = React.lazy(() => import('./pages/language-understanding/LUPage'));
@@ -109,14 +112,23 @@ const projectStyle = css`
 const ProjectRouter: React.FC<RouteComponentProps<{ projectId: string; skillId: string }>> = (props) => {
   const { projectId = '' } = props;
   const schemas = useRecoilValue(schemasState(projectId));
-  const { fetchProjectById } = useRecoilValue(dispatcherState);
+  const { fetchProjectById, setLocale } = useRecoilValue(dispatcherState);
   const botProjects = useRecoilValue(botProjectIdsState);
-
+  const botProjectSpaceLoaded = useRecoilValue(botProjectSpaceLoadedState);
+  const rootBotProjectId = useRecoilValue(rootBotProjectIdSelector);
+  const botName = useRecoilValue(botDisplayNameState(rootBotProjectId || ''));
   useEffect(() => {
     if (props.projectId && !botProjects.includes(props.projectId)) {
       fetchProjectById(props.projectId);
     }
   }, [props.projectId]);
+
+  useEffect(() => {
+    if (botProjectSpaceLoadedState && rootBotProjectId && botName) {
+      const storedLocale = languageStorage.get(botName)?.locale;
+      setLocale(storedLocale, rootBotProjectId);
+    }
+  }, [botProjectSpaceLoaded, rootBotProjectId, botName]);
 
   useEffect(() => {
     const schemaError = schemas?.diagnostics ?? [];
@@ -126,6 +138,8 @@ const ProjectRouter: React.FC<RouteComponentProps<{ projectId: string; skillId: 
       openAlertModal(title, subTitle, { style: dialogStyle.console });
     }
   }, [schemas, projectId]);
+
+  useEffect(() => {}, []);
 
   if (props.projectId && botProjects.includes(props.projectId)) {
     if (props.skillId && !botProjects.includes(props.skillId)) {
