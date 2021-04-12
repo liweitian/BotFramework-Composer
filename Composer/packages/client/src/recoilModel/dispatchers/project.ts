@@ -38,6 +38,7 @@ import {
 } from '../atoms';
 import { botRuntimeOperationsSelector, rootBotProjectIdSelector } from '../selectors';
 import { mergePropertiesManagedByRootBot, postRootBotCreation } from '../../recoilModel/dispatchers/utils/project';
+import { createWebsocket } from '../../websocketComponent';
 
 import { announcementState, boilerplateVersionState, recentProjectsState, templateIdState } from './../atoms';
 import { logMessage, setError } from './../dispatchers/shared';
@@ -226,7 +227,6 @@ export const projectDispatcher = () => {
 
         await flushExistingTasks(callbackHelpers);
         const { projectId, mainDialog } = await openRootBotAndSkillsByPath(callbackHelpers, path, storageId);
-
         // ABS open Flow, update publishProfile & set alias for project after open project
         if (absData) {
           const { profile, source, alias } = absData;

@@ -19,6 +19,7 @@ import { getLocationRef, getNewProjRef } from '../utility/project';
 import { BackgroundProcessManager } from '../services/backgroundProcessManager';
 import { TelemetryService } from '../services/telemetry';
 
+import Register from './register';
 import { Path } from './../utility/path';
 
 async function createProject(req: Request, res: Response) {
@@ -212,6 +213,7 @@ async function openProject(req: Request, res: Response) {
     if (currentProject !== undefined) {
       await currentProject.init();
       const project = currentProject.getProject();
+      Register.registerBot(id, currentProject);
       res.status(200).json({
         id: currentProject.id,
         ...project,
@@ -308,6 +310,7 @@ async function updateFile(req: Request, res: Response) {
   const currentProject = await BotProjectService.getProjectById(projectId, user);
   if (currentProject !== undefined) {
     const lastModified = await currentProject.updateFile(req.body.name, req.body.content);
+    Register.notifyChanges(currentProject.id as string, req.body.name, req.body.content);
     res.status(200).json({ lastModified: lastModified });
   } else {
     res.status(404).json({

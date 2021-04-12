@@ -29,6 +29,7 @@ import { PluginPageContainer } from './pages/plugin/PluginPageContainer';
 import { botDisplayNameState, botProjectSpaceLoadedState } from './recoilModel/atoms';
 import { mergePropertiesManagedByRootBot } from './recoilModel/dispatchers/utils/project';
 import languageStorage from './utils/languageStorage';
+import { WebSocketComponent } from './websocketComponent';
 
 const DesignPage = React.lazy(() => import('./pages/design/DesignPage'));
 const LUPage = React.lazy(() => import('./pages/language-understanding/LUPage'));
@@ -185,11 +186,17 @@ const ProjectRouter: React.FC<RouteComponentProps<{ projectId: string; skillId: 
       openAlertModal(title, subTitle, { style: dialogStyle.console });
     }
   }, [schemas, projectId]);
+
   if (props.projectId && botProjects.includes(props.projectId)) {
     if (props.skillId && !botProjects.includes(props.skillId)) {
       return <LoadingSpinner />;
     } else {
-      return <div css={projectStyle}>{props.children}</div>;
+      return (
+        <div css={projectStyle}>
+          {props.projectId && botProjectSpaceLoaded && <WebSocketComponent projectId={props.projectId} />}
+          {props.children}
+        </div>
+      );
     }
   }
   return <LoadingSpinner />;

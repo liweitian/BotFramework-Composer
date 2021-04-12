@@ -748,6 +748,8 @@ export class BotProject implements IBotProject {
     if (file.content !== content) {
       file.content = content;
       await this.fileStorage.writeFile(absolutePath, content);
+    } else {
+      console.log('内容一致不写入', absolutePath);
     }
 
     // TODO: we should get the lastModified from the writeFile operation

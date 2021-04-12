@@ -26,6 +26,7 @@ import { getAuthProvider } from './router/auth';
 import { apiRouter } from './router/api';
 import { BASEURL } from './constants';
 import { attachLSPServer } from './utility/attachLSP';
+import { attachPushServer } from './utility/attachPushServer';
 import log from './logger';
 import { setEnvDefault } from './utility/setEnvDefault';
 import { ElectronContext, setElectronContext } from './utility/electronContext';
@@ -178,11 +179,11 @@ export async function start(electronContext?: ElectronContext): Promise<number |
   let server;
   await new Promise((resolve) => {
     server = app.listen(port, () => {
-      if (process.env.NODE_ENV === 'production') {
-        // We don't use the debug logger here because we always want it to be shown.
-        // eslint-disable-next-line no-console
-        console.log(`\n\n${chalk.green('Composer now running at:')}\n\n${chalk.blue(`http://localhost:${port}`)}\n`);
-      }
+      //if (process.env.NODE_ENV === 'production') {
+      // We don't use the debug logger here because we always want it to be shown.
+      // eslint-disable-next-line no-console
+      console.log(`\n\n${chalk.green('Composer now running at:')}\n\n${chalk.blue(`http://localhost:${port}`)}\n`);
+      //}
       resolve();
     });
   });
@@ -249,6 +250,8 @@ export async function start(electronContext?: ElectronContext): Promise<number |
       });
     }
   });
+
+  attachPushServer(wss, server, 'getBotUpdate');
 
   return port;
 }
