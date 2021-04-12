@@ -251,7 +251,7 @@ export async function start(electronContext?: ElectronContext): Promise<number |
     }
   });
 
-  attachPushServer(wss, server, 'getBotUpdate');
+  attachPushServer(wss, server, '/getBotUpdate');
 
   return port;
 }

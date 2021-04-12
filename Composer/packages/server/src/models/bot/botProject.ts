@@ -749,7 +749,7 @@ export class BotProject implements IBotProject {
       file.content = content;
       await this.fileStorage.writeFile(absolutePath, content);
     } else {
-      console.log('内容一致不写入', absolutePath);
+      console.log('内容一致不应该不写入', absolutePath);
     }
 
     // TODO: we should get the lastModified from the writeFile operation

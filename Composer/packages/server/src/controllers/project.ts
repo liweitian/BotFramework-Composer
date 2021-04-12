@@ -310,7 +310,13 @@ async function updateFile(req: Request, res: Response) {
   const currentProject = await BotProjectService.getProjectById(projectId, user);
   if (currentProject !== undefined) {
     const lastModified = await currentProject.updateFile(req.body.name, req.body.content);
-    Register.notifyChanges(currentProject.id as string, req.body.name, req.body.content);
+    Register.notifyChanges({
+      botId: currentProject.id as string,
+      filename: req.body.name,
+      content: req.body.content,
+      op: 'update',
+      status: 'sync',
+    });
     res.status(200).json({ lastModified: lastModified });
   } else {
     res.status(404).json({
@@ -329,6 +335,13 @@ async function createFile(req: Request, res: Response) {
 
     //dir = id
     const file = await currentProject.createFile(name, content);
+    Register.notifyChanges({
+      botId: currentProject.id as string,
+      filename: name,
+      content,
+      op: 'create',
+      status: 'sync',
+    });
     res.status(200).json(file);
   } else {
     res.status(404).json({
@@ -344,6 +357,12 @@ async function removeFile(req: Request, res: Response) {
   const currentProject = await BotProjectService.getProjectById(projectId, user);
   if (currentProject !== undefined) {
     const dialogResources = await currentProject.deleteFile(req.params.name);
+    Register.notifyChanges({
+      botId: currentProject.id as string,
+      filename: req.body.name,
+      op: 'delete',
+      status: 'sync',
+    });
     res.status(200).json(dialogResources);
   } else {
     res.status(404).json({ error: 'No bot project opened' });

@@ -31,7 +31,12 @@ class Register {
     this.projectCache[id] = bot;
   }
 
-  public notifyChanges(botId: string, filename: string, content: string) {
+  public updateUserProject(ip: string, projectId: string) {
+    this.users[ip].currentBotId = projectId;
+  }
+
+  public notifyChanges(data: { botId: string; filename: string; content?: string; op: string; status: string }) {
+    const { botId } = data;
     const users = this.getUser(botId);
     const keys = Object.keys(users);
     for (let i = 0; i < keys.length; i++) {
@@ -39,8 +44,8 @@ class Register {
       // const project = this.projectCache[users[keys[i]].currentBotId];
       // const extension = getExtension(filename);
       // const file = project.getFile(filename);
-      console.log(filename, content);
-      users[keys[i]].ws.send(JSON.stringify({ filename, content }));
+      //console.log(filename, content);
+      users[keys[i]].ws.send(JSON.stringify(data));
     }
   }
 
